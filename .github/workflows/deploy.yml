@@ -1,0 +1,100 @@
+name: Build & Deploy (Admin)
+
+# staging    <- every push (main/develop) or any manual run -> .env.staging   -> Firebase Hosting target "staging"
+# production <- manual run only (environment=production), runs after staging succeeds -> .env.production -> Firebase Hosting target "production"
+# Project: airtac-8e4bf — sites: airtac-admin-staging / airtac-admin
+# (see .firebaserc for target mapping)
+on:
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to deploy"
+        required: true
+        type: choice
+        options: [staging, production]
+
+permissions:
+  contents: read
+
+jobs:
+  # Always runs first — every push (main/develop) and every manual run
+  # deploys to staging so changes are verified there before production.
+  deploy-staging:
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      # Recreates .env.staging from repo secrets so the NEXT_PUBLIC_* values
+      # committed in env/.env.staging.example aren't relied on in CI.
+      - name: Write env file
+        run: |
+          cat > ".env.staging" <<EOF
+          NEXT_PUBLIC_API_BASE_URL=${{ vars.NEXT_PUBLIC_API_BASE_URL }}
+          NEXT_PUBLIC_MAPBOX_TOKEN=${{ secrets.NEXT_PUBLIC_MAPBOX_TOKEN }}
+          EOF
+
+      # next.config.ts sets output:"export" whenever NODE_ENV=production
+      # (which `next build` sets internally), so the staging build also
+      # emits a static site to ./out — deployable to any static host.
+      - name: Build (static export)
+        run: npm run build:staging
+
+      - name: Deploy to Firebase Hosting (staging)
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: airtac-8e4bf
+          target: staging
+          channelId: live
+
+  # Only runs on a manual dispatch with environment=production, and only
+  # after deploy-staging has completed successfully.
+  deploy-production:
+    needs: deploy-staging
+    if: github.event_name == 'workflow_dispatch' && inputs.environment == 'production'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      # Recreates .env.production from repo secrets so the NEXT_PUBLIC_* values
+      # committed in env/.env.production.example aren't relied on in CI.
+      - name: Write env file
+        run: |
+          cat > ".env.production" <<EOF
+          NEXT_PUBLIC_API_BASE_URL=${{ vars.NEXT_PUBLIC_API_BASE_URL }}
+          NEXT_PUBLIC_MAPBOX_TOKEN=${{ secrets.NEXT_PUBLIC_MAPBOX_TOKEN }}
+          EOF
+
+      # next.config.ts sets output:"export" whenever NODE_ENV=production
+      # (which `next build` sets internally), so the production build
+      # emits a static site to ./out — deployable to any static host.
+      - name: Build (static export)
+        run: npm run build:production
+
+      - name: Deploy to Firebase Hosting (production)
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: airtac-8e4bf
+          target: production
+          channelId: live

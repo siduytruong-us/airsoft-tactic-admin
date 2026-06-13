@@ -1,0 +1,13 @@
+{
+  "projects": {
+    "default": "airtac-8e4bf"
+  },
+  "targets": {
+    "airtac-8e4bf": {
+      "hosting": {
+        "staging": ["airtac-admin-staging"],
+        "production": ["airtac-admin"]
+      }
+    }
+  }
+}

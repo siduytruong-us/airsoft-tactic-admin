@@ -1,0 +1,51 @@
+{
+  "name": "airsoft-tactic-admin",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "dev:local": "env-cmd -f .env.local next dev",
+    "dev:staging": "env-cmd -f .env.staging next dev",
+    "dev:production": "env-cmd -f .env.production next dev",
+    "build:staging": "bash scripts/build-static.sh staging",
+    "build:production": "bash scripts/build-static.sh production",
+    "start:staging": "npx serve -s out -l 3000",
+    "start:production": "npx serve -s out -l 3000"
+  },
+  "dependencies": {
+    "@mapbox/mapbox-gl-draw": "^1.5.1",
+    "@tanstack/react-query": "^5.62.7",
+    "@tanstack/react-query-devtools": "^5.62.7",
+    "axios": "^1.7.9",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.469.0",
+    "mapbox-gl": "^3.24.0",
+    "next": "15.3.3",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-hook-form": "^7.54.2",
+    "sonner": "^1.7.4",
+    "tailwind-merge": "^2.6.0",
+    "xlsx": "^0.18.5",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "env-cmd": "^10.1.0",
+    "@types/mapbox__mapbox-gl-draw": "^1.4.9",
+    "@types/mapbox-gl": "^3.4.1",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "autoprefixer": "^10.0.1",
+    "eslint": "^8",
+    "eslint-config-next": "15.3.3",
+    "postcss": "^8",
+    "serve": "^14.2.4",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5"
+  }
+}
