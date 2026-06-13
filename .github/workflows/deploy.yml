@@ -1,7 +1,8 @@
 name: Build & Deploy (Admin)
 
 # staging    <- every push (main/develop) or any manual run -> .env.staging   -> Firebase Hosting target "staging"
-# production <- manual run only (environment=production), runs after staging succeeds -> .env.production -> Firebase Hosting target "production"
+# production <- runs after staging succeeds, on every trigger -> .env.production -> Firebase Hosting target "production"
+#               gated by required-reviewer approval on the "production" GitHub environment
 # Project: airtac-8e4bf — sites: airtac-admin-staging / airtac-admin
 # (see .firebaserc for target mapping)
 on:
@@ -50,6 +51,7 @@ jobs:
         run: npm run build:staging
 
       - name: Deploy to Firebase Hosting (staging)
+        id: deploy_staging
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
@@ -58,11 +60,14 @@ jobs:
           target: staging
           channelId: live
 
-  # Only runs on a manual dispatch with environment=production, and only
-  # after deploy-staging has completed successfully.
+      - name: Print deployed URL
+        run: echo "Deployed to ${{ steps.deploy_staging.outputs.urls }}"
+
+  # Runs after deploy-staging on every trigger (push or workflow_dispatch).
+  # Gated by the "production" environment's required-reviewer rule in
+  # GitHub repo settings — the job pauses for manual approval before running.
   deploy-production:
     needs: deploy-staging
-    if: github.event_name == 'workflow_dispatch' && inputs.environment == 'production'
     runs-on: ubuntu-latest
     environment: production
     steps:
@@ -91,6 +96,7 @@ jobs:
         run: npm run build:production
 
       - name: Deploy to Firebase Hosting (production)
+        id: deploy_production
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
@@ -98,3 +104,6 @@ jobs:
           projectId: airtac-8e4bf
           target: production
           channelId: live
+
+      - name: Print deployed URL
+        run: echo "Deployed to ${{ steps.deploy_production.outputs.urls }}"
